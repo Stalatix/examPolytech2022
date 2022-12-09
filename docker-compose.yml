@@ -1,0 +1,52 @@
+#Docker Compose GREVE Emilien
+
+volumes:
+  mysql:
+
+networks:
+  backend:
+
+services:
+  mysql:
+    image: mysql:8
+    container_name: mysql
+    volumes:
+    - mysql:/var/lib/mysql/
+    networks:
+    - backend
+    environment:
+    - MYSQL_ROOT_PASSWORD=databasePassword
+    - MYSQL_DATABASE=superheroes
+    - MYSQL_USER=databaseUSer
+    - MYSQL_PASSWORD=databasePassword2
+
+
+  backend:
+    image: eval:1.0
+    container_name: backend
+    networks:
+      - backend
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/superheroes
+      - SPRING_DATASOURCE_USERNAME=databaseUSer
+      - SPRING_DATASOURCE_PASSWORD=databasePassword2
+    ports:
+      - 8448:8448
+    depends_on:
+      - mysql
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      interval: 5s
+      timeout: 5s
+      retries: 2
+
+  frontend:
+    image: evalfront:1.0
+    build: ./angular
+    container_name: frontend
+    environment:
+      - BACKEND_URL_ENV_VAR=http://localhost:8448
+    ports:
+      - 80:80
+    depends_on:
+      - backend
